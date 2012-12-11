@@ -1,0 +1,87 @@
+
+<project name="AboveAssign" basedir="." default="main">
+	<property file="build.properties" />
+	<target name="preparedb">
+	 <exec executable="sqlplus" failonerror="true">
+        <arg value="${db.userid}/${db.password}@${db.tnsalias}"/>
+        <arg value="@Above"/>
+	  </exec>
+	</target>
+	<!-- Create the required directory structure -->
+	<target name="init" description="make directories">
+		<mkdir dir="${src.dir}" />
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${jar.dir}" />
+		  <mkdir dir="${reports.tests}"/>
+	</target>
+
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar" />
+	</path>
+	<path id="test.classpath">
+		        <pathelement path="${test.dir}"/>
+		        <pathelement path="${lib.dir}/junit.jar"/>
+	            <pathelement path="${lib.dir}/mockito.jar"/>
+		        <pathelement path="${lib.dir}/spring.jar"/>
+		        <pathelement path="${lib.dir}/spring-test.jar"/>
+		        <pathelement path="${lib.dir}/commons-logging-1.0.4.jar"/>
+		        <pathelement path="${lib.dir}/commons-dbcp-1.2.jar"/>
+		        <pathelement path="${lib.dir}/commons-pool-1.5.jar"/>
+		        <pathelement path="${lib.dir}/entitybus-api-1.0.2.jar"/>
+		        <pathelement path="${lib.dir}/entitybus-impl-1.0.2.jar"/>
+		        <pathelement path="${lib.dir}/entitybus-rest-1.0.2.jar"/>
+		        <pathelement path="${lib.dir}/entitybus-utils-1.0.2.jar"/>
+		        <pathelement path="${lib.dir}/servlet-api-2.4.jar"/>
+		        <pathelement path="${classes.dir}"/>
+		</path>
+	<target name="clean">
+		  <delete dir="${jar.dir}" />
+		  <delete dir="${classes.dir}" />
+		  <delete dir="${build.dir}" />
+		  <mkdir dir="${reports.tests}"/>
+	</target>
+	<target name="compile">
+		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath"
+			includeantruntime="false" />
+		<copy todir="${classes.dir}">
+			<fileset dir="properties">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+	<target name="compile-test" depends="compile" description="Compile Test Classes">
+            <javac srcdir="${test.dir}" includeantruntime="false" >
+			 <classpath refid="test.classpath"/>
+			</javac>
+ 	</target>
+	<target name="war" depends="compile">
+		<war destfile="dist/AboveAssign.war" webxml="WebContent/WEB-INF/web.xml">
+			<fileset dir="WebContent" />
+			<lib dir="WebContent/WEB-INF/lib" />
+			<classes dir="${classes.dir}" />
+		</war>
+		<copy todir="${tomcat.deploy.path}" preservelastmodified="true">
+			<fileset dir="dist">
+				<include name="AboveAssign.war" />
+			</fileset>
+		</copy>
+	</target>
+			
+		
+	
+	 <target name="test-run" depends="compile" description="Run Test Cases">        
+          	  <junit haltonfailure="yes" showoutput="yes">
+		      <classpath refid="test.classpath"/>
+			    <formatter type="xml"/>		
+		      <batchtest fork="yes" todir="${reports.tests}">
+		        <fileset dir="${test.dir}">
+		          <include name="**/*Test*.java"/>
+		        </fileset>
+		      </batchtest>
+   			 </junit>
+    </target>
+    
+    
+	<target name="main" depends="preparedb,clean,init,compile,compile-test,test-run,war" />
+</project>
